@@ -63,14 +63,37 @@ cd FCG-Frontend
 # Instale as dependências
 npm install
 
-# Copie o arquivo de variáveis de ambiente
-cp .env.example .env
-
 # Inicie o servidor de desenvolvimento
 npm run dev
 ```
 
 A aplicação estará disponível em `http://localhost:5173`.
+
+> **Nota:** o front-end sempre chama caminhos relativos (`/api/Game`, `/api/User`, etc.) e não utiliza variáveis de ambiente. Quem resolve cada rota para o microsserviço correto é o Ingress do cluster (em produção) ou o proxy do seu servidor de desenvolvimento local.
+
+### 2. Scripts Disponíveis
+| Comando | Descrição |
+| :--- | :--- |
+| `npm run dev` | Inicia o servidor de desenvolvimento com hot reload (Vite) |
+| `npm run build` | Checagem de tipos (`tsc -b`) e build de produção |
+| `npm run lint` | Executa o lint do projeto (`oxlint`) |
+| `npm run preview` | Serve localmente o build de produção gerado em `dist/` |
+
+---
+
+## 📁 Estrutura do Projeto
+```
+src/
+├── assets/         # Imagens e ícones estáticos
+├── components/     # Componentes reutilizáveis (Navbar, CartDrawer, GameCard, etc.)
+├── context/         # Contextos globais (Auth, Cart, Toast)
+├── layouts/         # Layout principal da aplicação
+├── pages/           # Páginas por domínio (auth, store, checkout, library, orders, profile, admin)
+├── routes/          # Definição de rotas e guards de acesso (público/privado/admin)
+├── services/        # Clientes HTTP e chamadas às APIs (auth, catalog, orders, reviews)
+├── types/           # Tipagens TypeScript compartilhadas
+└── utils/           # Funções utilitárias (ex.: validação de CPF)
+```
 
 ---
 
