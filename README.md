@@ -97,9 +97,8 @@ src/
 
 ---
 
-## 🐳 Executando com Docker & Docker Compose
+## 🐳 Executando com Docker
 
-### Build e execução isolada
 ```bash
 # Build da imagem Docker
 docker build -t fcg-frontend:latest .
@@ -108,10 +107,7 @@ docker build -t fcg-frontend:latest .
 docker run -d -p 3000:80 --name fcg-frontend fcg-frontend:latest
 ```
 
-### Execução integrada na rede `fcg-network`
-```bash
-docker compose up -d
-```
+> Para subir o front-end junto com os demais microsserviços (API's, banco de dados, observabilidade, etc.), use o `docker-compose.yml` centralizado no repositório **FCG-Infra**.
 
 ---
 
