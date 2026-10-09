@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  fcg-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fcg-frontend
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    networks:
+      - fcg-network
+
+networks:
+  fcg-network:
+    name: fcg-network
+    external: true
