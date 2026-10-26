@@ -95,6 +95,10 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Update kubeconfig
         run: aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }} --region ${{ secrets.AWS_REGION }}
 
@@ -110,7 +114,7 @@ jobs:
       - name: Set new image
         run: |
           kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} \
-            ${{ env.DEPLOYMENT_NAME }}=${{ needs.build-and-push.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }} \
+            ${{ env.DEPLOYMENT_NAME }}=${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image-tag }} \
             -n ${{ env.NAMESPACE }}
 
       - name: Wait for rollout
