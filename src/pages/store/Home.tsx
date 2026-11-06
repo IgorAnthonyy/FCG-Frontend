@@ -12,6 +12,9 @@ export const Home: React.FC = () => {
   const [userLibrary, setUserLibrary] = useState<LibraryItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [debouncedQuery, setDebouncedQuery] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<Game[] | null>(null);
+  const [searching, setSearching] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
   const { isAuthenticated } = useAuth();
@@ -47,29 +50,66 @@ export const Home: React.FC = () => {
     fetchData();
   }, [isAuthenticated]);
 
+  // Debounce the raw input so we don't hit the search endpoint on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery.trim());
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Full-text search via Elasticsearch (GET /api/Game/search). An empty query
+  // falls back to the already-loaded catalog instead of calling the backend.
+  useEffect(() => {
+    if (!debouncedQuery) {
+      setSearchResults(null);
+      setSearching(false);
+      return;
+    }
+
+    let ignore = false;
+    setSearching(true);
+
+    catalogService
+      .searchGames(debouncedQuery)
+      .then((results) => {
+        if (!ignore) setSearchResults(results);
+      })
+      .catch(() => {
+        if (!ignore) {
+          setSearchResults([]);
+          error('Não foi possível buscar os jogos.');
+        }
+      })
+      .finally(() => {
+        if (!ignore) setSearching(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [debouncedQuery]);
+
   const ownedGameIds = useMemo(() => {
     return new Set(userLibrary.map((item) => item.gameId));
   }, [userLibrary]);
 
   const filteredGames = useMemo(() => {
-    return games.filter((game) => {
-      const name = game.name ?? '';
-      const desc = game.description ?? '';
-      const query = (searchQuery ?? '').toLowerCase();
+    // While the first search for a query is still in flight, keep showing the
+    // current catalog instead of flashing an empty "no games found" state.
+    const baseGames = debouncedQuery ? searchResults ?? (searching ? games : []) : games;
 
-      const matchesSearch =
-        name.toLowerCase().includes(query) ||
-        desc.toLowerCase().includes(query);
-
+    return baseGames.filter((game) => {
       const matchesCategory =
         selectedCategory === null ||
         game.categoryIds?.includes(selectedCategory) ||
         game.categories?.some((c) => c.id === selectedCategory) ||
         (game as unknown as { categoryId?: number }).categoryId === selectedCategory;
 
-      return matchesSearch && matchesCategory;
+      return matchesCategory;
     });
-  }, [games, searchQuery, selectedCategory]);
+  }, [games, searchResults, debouncedQuery, searching, selectedCategory]);
 
   return (
     <div>
@@ -139,7 +179,15 @@ export const Home: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <Search size={18} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+            {searching ? (
+              <RefreshCw
+                size={18}
+                className="animate-spin"
+                style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }}
+              />
+            ) : (
+              <Search size={18} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+            )}
           </div>
 
           {/* Refresh button */}

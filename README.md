@@ -20,7 +20,7 @@ Interface web moderna desenvolvida para a plataforma de jogos em nuvem **FIAP Cl
 
 ### 1. Loja & Catálogo de Jogos (Storefront)
 * **Vitrine Dinâmica**: Listagem de jogos em cards com preço, categorias e imagem.
-* **Filtros e Busca**: Pesquisa instantânea por título/descrição e filtros por categorias.
+* **Filtros e Busca**: Pesquisa por título/descrição via Elasticsearch (`GET /api/Game/search`, com debounce e tolerância a erros de digitação) combinada com filtros por categoria aplicados sobre o resultado.
 * **Página de Detalhes do Jogo**: Informações detalhadas, visualização de notas e compra direta.
 * **Sistema de Avaliações (Reviews)**:
   * Armazenado no MongoDB do microsserviço de catálogo.
@@ -134,6 +134,7 @@ kubectl apply -f k8s/frontend-service.yaml
 | **Users API** | `PUT` | `/api/User/change-password` | Alteração de senha |
 | **Users API** | `DELETE`| `/api/User/{id}` | Exclusão de conta de usuário |
 | **Catalog API** | `GET` | `/api/Game` | Listagem e filtros do catálogo de jogos |
+| **Catalog API** | `GET` | `/api/Game/search` | Busca textual de jogos via Elasticsearch (nome, descrição) |
 | **Catalog API** | `GET` | `/api/Game/{id}` | Consulta de detalhes do jogo |
 | **Catalog API** | `POST/PUT/DELETE` | `/api/Game` | CRUD de jogos (Admin) |
 | **Catalog API** | `GET` | `/api/Category` | Listagem de categorias |

@@ -9,6 +9,24 @@ import type {
   LibraryItem,
 } from '../types';
 
+async function enrichWithDetails(list: Game[]): Promise<Game[]> {
+  if (list.length === 0) return list;
+
+  return Promise.all(
+    list.map(async (shortGame) => {
+      try {
+        const detail = await catalogClient.get<Game>(`/api/Game/${shortGame.id}`);
+        return {
+          ...shortGame,
+          ...detail.data,
+        };
+      } catch {
+        return shortGame;
+      }
+    })
+  );
+}
+
 export const catalogService = {
   // Games
   async getAllGames(params?: { categoryId?: number; search?: string; pageNumber?: number; pageSize?: number }): Promise<Game[]> {
@@ -20,24 +38,23 @@ export const catalogService = {
       list = response.data.games;
     }
 
-    if (list.length > 0) {
-      const detailedList = await Promise.all(
-        list.map(async (shortGame) => {
-          try {
-            const detail = await catalogClient.get<Game>(`/api/Game/${shortGame.id}`);
-            return {
-              ...shortGame,
-              ...detail.data,
-            };
-          } catch {
-            return shortGame;
-          }
-        })
-      );
-      return detailedList;
+    return enrichWithDetails(list);
+  },
+
+  // Full-text search powered by Elasticsearch (GET /api/Game/search)
+  async searchGames(query: string, page = 1, pageSize = 50): Promise<Game[]> {
+    const response = await catalogClient.get<GamesListResponse | Game[]>('/api/Game/search', {
+      params: { query, page, pageSize },
+    });
+
+    let list: Game[] = [];
+    if (Array.isArray(response.data)) {
+      list = response.data;
+    } else if (response.data?.games) {
+      list = response.data.games;
     }
 
-    return list;
+    return enrichWithDetails(list);
   },
 
   async getGameById(id: number): Promise<Game> {
